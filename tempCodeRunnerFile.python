@@ -1,0 +1,78 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.optim import SGD
+
+class NN_model(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.w00=nn.Parameter(torch.tensor(1.7), requires_grad=False)
+        self.b00=nn.Parameter(torch.tensor(-0.85), requires_grad=False)
+        self.w01=nn.Parameter(torch.tensor(-40.8), requires_grad=False)
+
+        self.w10=nn.Parameter(torch.tensor(12.6), requires_grad=False)
+        self.b10=nn.Parameter(torch.tensor(0.0), requires_grad=False)
+        self.w11=nn.Parameter(torch.tensor(2.7), requires_grad=False)
+
+        self.final_bias=nn.Parameter(torch.tensor(0.), requires_grad=True)
+
+    def forward(self, input):
+        input_to_toprelu = input*self.w00+self.b00
+        top_relu_output = F.relu(input_to_toprelu)
+        top_scaled = top_relu_output * self.w01
+
+
+        input_to_bottomrelu =  input*self.w10+self.b10
+        bottom_relu_output = F.relu(input_to_bottomrelu)
+        bottom_scaled = bottom_relu_output * self.w11
+
+        final_output = top_scaled + bottom_scaled+self.final_bias
+
+        output = F.relu(final_output)
+        return output
+
+inputs = torch.tensor([0.,0.5,1.])
+outputs = torch.tensor([0.,1.,0.])
+
+model = NN_model()
+
+optimizer = SGD(model.parameters(), lr=0.01)
+
+print("Final bias, before optimization: " + str(model.final_bias.data) + "\n")
+
+for epoch in range(100):
+    losses=0
+    for i in range(len(inputs)):
+        input_i = inputs[i]
+        label_i= outputs[i]
+        output_i = model(input_i)
+       
+        if output_i is None:
+          loss = torch.tensor((0.0 - label_i.item()) ** 2, requires_grad=True)
+        else:
+          loss = torch.tensor((output_i - label_i)**2, requires_grad=True)
+
+        loss.backward()
+
+        losses += float(loss)
+
+      
+
+        optimizer.step()
+        optimizer.zero_grad()
+
+        print("step : " + str(epoch) + "final bias value = " + str(model.final_bias.data) + "\n")
+
+print("Total loss = " + str( losses) + " Final bias value after optimization" + str(model.final_bias.data))
+
+output_values = model(inputs)
+
+print(output_values)
+
+
+
+
+
+
+
